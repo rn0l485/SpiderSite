@@ -26,16 +26,28 @@ func add(c *gin.Context) {
 		return
 	}
 
-
+	var respJson map[string]string
 	resp, err := w.POST(config.MongoDBApi+"/v1/add", false, gin.H{
 		"DataBaseName" : "Spider",
 		"CollectionName" : "Reply",
-		"Record" : Reply{
-			"Keyword" 		: 	payload	
-			"ReplyStatment" :	payload
-			"Weights"		: 	payload
+		"Record" : models.Reply{
+			"Keyword" 		: 	payload.Setting["Keyword"],
+			"ReplyStatment" :	payload.Setting["ReplyStatment"],
+			"Weights"		: 	payload.Setting["Weights"],
 		}
 	})
+	if err != nil {
+		fmt.Fprintln(gin.DefaultWriter, err.Error())
+		return
+	}
 
-	
+	if err := json.Unmarshal( resp.Body, &respJson); err != nil {
+		fmt.Fprintln(gin.DefaultWriter, err.Error())
+		return
+	}
+
+	if respJson["StatusCode"] != "200" {
+		fmt.Fprintln(gin.DefaultWriter, err.Error())
+		return
+	}
 }
