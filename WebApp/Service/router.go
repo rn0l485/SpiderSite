@@ -14,7 +14,7 @@ var R *gin.Engine
 func init() {
 	R = gin.Default()
 
-	store := cookie.NewStore([]byte(config.CookieSecret)) // config.CookieSecret
+	store := cookie.NewStore([]byte(config.CookieSecret))
 
 	R.Use(sessions.Sessions("status", store))
 	
@@ -23,14 +23,19 @@ func init() {
 	R.Static("/static", "Decorations/WebApp/Service/static")
 
 
-	R.GET("/", LoginPage)
-	R.GET("/setting", AuthRequired(),SettingPage)
+	R.GET("/", Page)
+	R.GET("/setting", 	AuthRequired(), Page)
+	R.GET("/result",	AuthRequired(), Page)
 
 	api := R.Group("/api") 
 	{
+		api.POST("/login", Login)
+
 		v001 := api.Group("/v001")
+		v001.Use(AuthRequired())
 		{
-			
+			v001.POST( "/setting", 	Set)
+			v001.POST( "/data", 	Data)
 		}
 	}
 
