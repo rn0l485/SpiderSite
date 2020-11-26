@@ -18,7 +18,8 @@ func init() {
 	
 	v1 := R.Group("/v1")
 	{
-		v1.POST("/processing", processing)
+		v1.POST("/processing", 	processing)
+		v1.POST("/add", 		add)
 
 	}
 
