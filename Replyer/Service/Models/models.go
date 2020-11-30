@@ -44,7 +44,7 @@ type User struct {
 	Account 			string 					`bson:"account" 		json:"Account"`
 	Password			string 					`bson:"password" 		json:"Password"`
 	Name 				string 					`bson:"name"			json:"Name"`
-	Lv 					int 					`bson:"lv" 				json:"Lv"`
+	Lv 					string 					`bson:"lv" 				json:"Lv"`
 	CreateTime 			*time.Time 				`bson:"create_time"		json:"CreateTime"`
 }
 

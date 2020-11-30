@@ -29,16 +29,17 @@ func init() {
 
 	api := R.Group("/api") 
 	{
-		api.POST("/login", Login)
-
 		v001 := api.Group("/v001")
-		v001.Use(AuthRequired())
 		{
-			v001.POST( "/setting", 	Set)
-			v001.POST( "/data", 	Data)
+			v001.POST( "/login"		, Login )
+			v001.POST( "/setting"	, AuthRequired()	, Set)
+			v001.POST( "/data"		, AuthRequired()	, Data)
+			v001.POST( "/alive"		, AuthRequired()	, AliveCheck)
 		}
 	}
 
 	R.NoRoute(pageNotFound)
 	R.NoMethod(pageNotFound)
+
+	go Start()
 }

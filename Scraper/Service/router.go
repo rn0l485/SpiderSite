@@ -24,6 +24,7 @@ func init() {
 	facebook := R.Group("/facebook")
 	{
 		facebook.GET("/crawler", FBCrawler)
+		facebook.GET("/replyer", FBReplyer)
 	}
 	
 
