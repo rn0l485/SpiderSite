@@ -17,6 +17,7 @@ type Post struct {
 	// reply account
 	ReplyAccount 		string 					`bson:"reply_account"	json:"ReplyAccount"`
 	ReplyID				int 					`bson:"reply_id"		json:"ReplyID"`
+	ReplyKeyword 		string 					`bson:"reply_keyword" 	json:"ReplyKeyword"`
 	ComeBack 			bool 					`bson:"come_back"		json:"ComeBack"`
 
 	CreateTime 			*time.Time 				`bson:"create_time"		json:"CreateTime"`
@@ -25,7 +26,7 @@ type Post struct {
 
 type Reply struct {
 	Id 					int 					`bson:"_id" 			json:"Id"`
-	Keyword 			string 					`bson:"context" 		json:"Keyword"`		
+	Keyword 			string 					`bson:"keyword" 		json:"Keyword"`	
 	ReplyStatment 		string 					`bson:"reply_statment" 	json:"ReplyStatment"`
 	Weights 			int 	 				`bson:"weights" 		json:"Weights"`
 }
@@ -68,5 +69,3 @@ type Payload struct {
 	DataBaseName			string 										`json:"DataBaseName"`
 	CollectionName 			string 										`json:"CollectionName"`
 }
-
-

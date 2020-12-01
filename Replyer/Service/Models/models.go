@@ -25,9 +25,9 @@ type Post struct {
 
 type Reply struct {
 	Id 					int 					`bson:"_id" 			json:"Id"`
-	Keyword 			string 					`bson:"context" 		json:"Keyword"`		
+	Keyword 			string 					`bson:"keyword" 		json:"Keyword"`		
 	ReplyStatment 		string 					`bson:"reply_statment" 	json:"ReplyStatment"`
-	Weights 			int 	 				`bson:"weights" 		json:"Weights"`
+	Weights 			string 	 				`bson:"weights" 		json:"Weights"`
 }
 
 type Setting struct {

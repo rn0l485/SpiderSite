@@ -9,5 +9,5 @@ var (
 )
 
 
-var MongoDBSetting map[string]string
+
 
