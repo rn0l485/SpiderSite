@@ -92,10 +92,10 @@ func Set(c *gin.Context) {
 	ErrorMessageSet := make([][]string) 
 
 	for i, v := range payload {
-		if s, ok := v["Service"]; !ok{ 
+		if _, ok := v["Service"]; !ok{ 
 			v["Service"] = "Error" 
 		} 
-		if d, ok := v["Do"]; !ok { 
+		if _, ok := v["Do"]; !ok { 
 			v["Do"] = "Error" 
 		}
 
@@ -458,7 +458,7 @@ func Data(c *gin.Context) {
 		})
 		return
 	}
-	if serv, ok := payload["Service"]; !ok {
+	if _, ok := payload["Service"]; !ok {
 		c.JSON( http.StatusNotFound, gin.H{
 			"Msg" 			: "Basic Info Error",
 			"StatusCode" 	: "404",
@@ -547,7 +547,7 @@ func Data(c *gin.Context) {
 		resp, err := w.Post(config.MongoDBApi + "/v1/search", false, gin.H{
 			"DataBaseName" : "Spider",
 			"CollectionName" : "User",
-			"Filter" : {},
+			"Filter" : gin.H{},
 		})
 		if err != nil {
 			c.JSON( http.StatusNotFound, gin.H{
@@ -572,23 +572,107 @@ func Data(c *gin.Context) {
 			return 	
 		}
 
-		AccountSaved := []string{}
+		AccountSaved := make(map[string][]string)
 		for _, user := respJson["Data"].([]models.User) {
-			AccountSaved = append(AccountSaved, user.Account)
+			if v,ok := AccountSaved[user.Domain]; ok {
+				AccountSaved[user.Domain] = append(v, user.Account)
+			} else {
+				AccountSaved[user.Domain] = []string{user.Account}
+			}
 		}
 
+		resp, err = w.Post(config.MongoDBApi + "/v1/search", false, gin.H{
+			"DataBaseName" : "Spider",
+			"CollectionName" : "Config",
+			"Filter" : gin.H{},
+		})
 
+		if err != nil {
+			c.JSON( http.StatusNotFound, gin.H{
+				"Msg":err.Error(),
+				"StatusCode":"404",
+			})				
+		}
 
+		var respJsonSup map[string]interface{}
+		if err := json.Unmarshal( resp.Body, &respJsonSup); err != nil {
+			c.JSON( http.StatusNotFound, gin.H{
+				"Msg" : err.Error(),
+				"StatusCode":"404",
+			})
+			return 	
+		}
 
+		passBack := make([]map[string]interface{})
+		for k,v := range AccountSaved {
+			passBack = append(passBack, gin.H{
+				"AccountSaved" : v,
+				"Domain" : k,
+			})
+		}
 
+		for _, v := range respJsonSup["Data"].([]map[string]string) {
+			for _, pb := range passBack {
+				if _, ok := pb[v["Domain"]]; ok {
+					pb["DailyScrapingOn"] = v["DailyScrapingOn"]
+					pb["CurrentAccount"] = v["CurrentAccount"]
+					pb["SaveForXDays"] = v["SaveForXDays"]
+				}
+			}
+		}
 
-		
-
-
-
-
+		c.JSON( http.StatusOK, gin.H{
+			"Msg" : "ok",
+			"StatusCode" : "200",
+			"Data" : passBack,
+		})
+		return
 	case "keyword":
+		resp, err := w.Post( config.MongoDBApi + "/v1/search", false, gin.H{
+			"DataBaseName" : "Spider",
+			"CollectionName" : "Reply",
+			"Filter" : gin.H{},
+		})
+
+		if err != nil {
+			c.JSON( http.StatusNotFound, gin.H{
+				"Msg" : err.Error(),
+				"StatusCode":"404",
+			})
+			return 				
+		}
+
+		var respJson map[string]interface{}
+		if err := json.Unmarshal( resp.Body, &respJson); err != nil {
+			c.JSON( http.StatusNotFound, gin.H{
+				"Msg" : err.Error(),
+				"StatusCode":"404",
+			})
+			return 	
+		}	
+		kvSet := make([]map[string]string)
+		for _,v := respJson["Data"].([]map[string]string){
+			kvSet = append(kvSet, map[string]string{
+				v["Keyword"] : []string{
+					v["Value"],
+					v["Weight"],
+				}
+			})
+		}
+		passBack := gin.H{
+			"Msg" : "ok",
+			"StatusCode" : "200",
+			"Data" : kvSet,
+		}
+
+		c.JSON( http.StatusOK, passBack)
+		return
+
 	default:
+		c.JSON(http.StatusNotFound, gin.H{
+			"Msg" : "Error",
+			"StatusCode" : "404",
+		})
 	}
 		
 }
@@ -599,3 +683,5 @@ func AliveCheck(c *gin.Context){
 		"StatusCode":"200",
 	})
 }
+
+type 
