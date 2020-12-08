@@ -63,7 +63,7 @@ func Delete(c *gin.Context) {
 				http.StatusInternalServerError,
 				gin.H{
 					"Msg": err.Error(),
-					"StatusCode" : "500",
+					"StatusCode" : "404",
 				},
 			)		
 		} else {

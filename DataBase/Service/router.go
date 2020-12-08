@@ -1,6 +1,9 @@
 package DBServer
 
 import (
+	"os"
+	"io"
+
 	"net/http"
 	"github.com/gin-gonic/gin"
 
@@ -12,6 +15,18 @@ var R *gin.Engine
 
 func init(){
 	gin.SetMode(gin.ReleaseMode)
+
+	var f *os.File
+	if _, err := os.Stat("./DB.log"); err == nil {
+		f,_ = os.OpenFile("./DB.log", os.O_RDWR|os.O_CREATE, 0755)
+	} else if os.IsNotExist(err) {
+		f,_ = os.Create("./DB.log")
+	} else {
+		f,_ = os.OpenFile("./DB.log", os.O_RDWR|os.O_CREATE, 0755)
+	}
+
+	gin.DefaultWriter = io.MultiWriter(f)
+
 	R = gin.Default()
 
 	R.GET("/", alive)

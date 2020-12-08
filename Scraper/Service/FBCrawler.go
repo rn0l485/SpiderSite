@@ -77,13 +77,6 @@ func fb() chromedp.Tasks{
 
 	// Get setting
 
-	/*var account 	string = "rm0l485@hotmail.com.tw"
-	var password 	string = "ChengHuan@1992"
-	var GroupURL 	string = "https://www.facebook.com/groups/752971828086206?sorting_setting=CHRONOLOGICAL"
-	var SearchLimitationLastPost 	string = "https://www.facebook.com/groups/DataScienceGroup/permalink/3726016267460236/"
-	var SearchLimitationPostNum 	int = 50*/
-
-
 	return chromedp.Tasks{
 		chromedp.ActionFunc(func(c context.Context) error {
 

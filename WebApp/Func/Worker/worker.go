@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"io/ioutil"
+	"fmt"
 
 	"github.com/json-iterator/go"
 )
@@ -73,7 +74,10 @@ func (w Worker) Post(gurl string, setCookies bool, data interface{}) (*Response,
 	if err != nil{
 		return nil, err
 	}
-	req, _ := http.NewRequest( "POST", gurl, bytes.NewBuffer(b))
+	req, errA := http.NewRequest( "POST", gurl, bytes.NewBuffer(b))
+	if errA != nil {
+		fmt.Print(errA.Error())
+	}
 	if w.Header != nil {
 		req.Header = w.Header
 	}

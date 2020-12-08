@@ -19,11 +19,6 @@ var (
 )
 
 func main() {
-	defer sp.Cancel()
-
-
-
-
 	srv1 := &http.Server{
 		Addr:		config.Port,
 		Handler:	sp.R,
