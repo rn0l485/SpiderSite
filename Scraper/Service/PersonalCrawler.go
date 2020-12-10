@@ -23,7 +23,7 @@ import (
 
 var ActionChan map[string](chan []string) = make(map[string](chan []string),0)
 
-func PersonalCrawler(c *gin.Context){
+func FacebookPersonalCrawler(c *gin.Context){
 	var payload map[string]interface{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.AbortWithStatusJSON(
@@ -36,28 +36,35 @@ func PersonalCrawler(c *gin.Context){
 		return
 	}
 
+	if payload["Domain"] == nil || payload["Account"] == nil {
+		c.JSON( http.StatusNotFound, gin.H{
+			"Msg" : "Keyword error",
+			"StatusCode" : "404",
+		})
+		return
+	} 
+
+
 
 
 	workingAccount := payload["Domain"].(string)+payload["Account"].(string)
 	if v,ok := ActionChan[workingAccount]; !ok {
 		ActionChan[workingAccount] = make(chan []string)
 		ActionChan[workingAccount] <- payload["UrlQue"].([]string)
-		err := InitFacebookAccount(ActionChan[workingAccount], payload["Account"].(string), payload["Password"].(string))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{
-				"Msg" : err.Error(),
-				"StatusCode" : "404",
-			})
-			return 
-		}
+		go InitFacebookAccount(ActionChan[workingAccount], payload["Account"].(string), payload["Password"].(string))
 	} else {
 		select {
 		case targetQue := <- v:
 			if op := payload["UrlQue"].([]string)[0]; op == "Stop"{
-				
+				return
 			}
 			targetQue = append( targetQue, payload["UrlQue"].([]string)...)
 			v <- targetQue
+
+			c.JSON(http.StatusOK, gin.H{
+				"Msg":"ok",
+				"StatusCode":"200",
+			})
 		case <- time.After( 30* time.Second) :
 			c.JSON( http.StatusNotFound, gin.H{
 				"Msg" : "Que error #1",
@@ -66,13 +73,6 @@ func PersonalCrawler(c *gin.Context){
 		}
 	}
 }
-
-
-
-
-
-
-
 
 func InitFacebookAccount( groupURL chan []string, account, password string) {
 	options := []chromedp.ExecAllocatorOption{
@@ -96,21 +96,37 @@ func InitFacebookAccount( groupURL chan []string, account, password string) {
 	if err != nil {
 		fmt.Fprintln(gin.DefaultWriter, err.Error())
 	}
+
 	for {
 		select {
 		case target := <- groupURL: 
 			if target[0] == "Stop" {
 				return 
-			}
-			err = chromedp.Run( ctx, )
-			if err != nil {
-				fmt.Fprintln(gin.DefaultWriter, err.Error())
-			}			
+			} else if target[0] == "Group" {
+				for _,v := range target[1:]{
+					err = chromedp.Run( ctx, FacebookGroupScraping(v, account))
+					if err != nil {
+						fmt.Fprintln(gin.DefaultWriter, err.Error())
+					}
+				}
+			} else if target[0] == "Reply" {
+				for i,_ := range target[1:]{
+					if i%2 == 0 {
+						continue
+					}
+					err = chromedp.Run( ctx, FacebookReply(target[i],target[i+1]))
+					if err != nil {
+						fmt.Fprintln(gin.DefaultWriter, err.Error())
+					}				
+				}
+			}	
 		}
 	}
 }
 
 func FacebookLogin(account, password string) chromedp.Tasks {
+	var attrValue 	string
+	var ok 			bool
 	return chromedp.Tasks{
 		chromedp.ActionFunc(func(c context.Context) error {
 
@@ -165,44 +181,26 @@ func FacebookLogin(account, password string) chromedp.Tasks {
 	}
 }
 
-func FacebookGroupScraping( url string) chromedp.Tasks {
-	return chromedp.Tasks{
-		chromedp.ActionFunc(func(c context.Context) error {
-
-		}),
-	}
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-func fb() chromedp.Tasks{
-	var attrValue 	string
-	var ok 			bool
-
+func FacebookGroupScraping( url, account string) chromedp.Tasks {
 	var nodes 		[]*cdp.Node
 	var pnodes		[]*cdp.Node
 	var nodeListLen int = 0
 	var lastLen 	int = 0
 	var keep		bool = true
 
-	// Get setting
-
 	return chromedp.Tasks{
-
 		chromedp.ActionFunc(func(c context.Context) error {
+			err := chromedp.Navigate(`https://www.facebook.com`).Do(c)
+			if err != nil {
+				return err
+			}
 
-			err := chromedp.Navigate(setting.Value.(map[string]interface{})["GroupURL"].(string)).Do(c)
+			err = chromedp.WaitReady(`#facebook`).Do(c)
+			if err != nil {
+				return err
+			}			
+
+			err := chromedp.Navigate(url).Do(c)
 			if err != nil {
 				return err
 			}
@@ -211,12 +209,9 @@ func fb() chromedp.Tasks{
 				return err
 			}
 			_ = chromedp.Sleep( 3 * time.Second).Do(c)
-			return nil
+			return nil			
 		}),
-
-		chromedp.ActionFunc(func(c context.Context) error {
-			
-
+		chromedp.ActionFunc(func(c context.Context) error{
 			_, exp, err := runtime.Evaluate(`window.scrollTo(0,document.body.scrollHeight);`).Do(c)
 			if err != nil { return err }
 			if exp != nil { return exp }
@@ -252,7 +247,7 @@ func fb() chromedp.Tasks{
 				}
 				
 
-				if  len(nodes)-3 > setting.Value.(map[string]interface{})["SearchLimitationPostNum"].(int) { break }
+				if  len(nodes)-3 > config.SearchLimitationPostNum { break }
 				if keep {
 					_, exp, err := runtime.Evaluate(`window.scrollTo(0,document.body.scrollHeight);`).Do(c)
 					if err != nil { return err }
@@ -271,17 +266,16 @@ func fb() chromedp.Tasks{
 
 				postURL := rPost.FindString(innerHtml)
 				userURL := rUser.FindString(innerHtml)
-				if postURL == setting.Value.(map[string]interface{})["SearchLimitationLastPost"].(string)  { break }
 
-				newPost := Post{
-					Domain: 		"facebook",
-					Group:			setting.Value.(map[string]interface{})["GroupURL"].(string),
-					Url: 			postURL,
-					ClientUrl: 		userURL,
-					Context: 		innerHtml,
-					CreateTime: 	time.Now(),
-					ReplyAccount: 	setting.Value.(map[string]interface{})["Account"].(string),
-					Status: 		"0",
+				newPost := gin.H{
+					"Domain"		: "facebook",
+					"Group"			: url,
+					"Url"			: postURL,
+					"ClientUrl"		: userURL,
+					"Context" 		: innerHtml,
+					"CreateTime" 	: strconv.FormatInt(time.Now().Unix(), 10),
+					"ReplyAccount" 	: account,
+					"status" 		: "unreply",
 				}
 
 				resp, err := w.Post( config.MongoDBApi+"/v1/add", false, gin.H{
@@ -293,7 +287,7 @@ func fb() chromedp.Tasks{
 
 				var respJson map[string]string
 				if err := json.Unmarshal( resp, &respJson); err != nil { return  err }
-				if respJson["StatusCode"] == "500" {
+				if respJson["StatusCode"] != "200" {
 					return errors.New("saving error")
 				}
 

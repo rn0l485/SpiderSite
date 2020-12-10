@@ -4,14 +4,14 @@ import (
 
 	"Decorations/WebApp/Func/Worker"
 	"Decorations/WebApp/Config"
-	"Decorations/WebApp/Service/Models"
 	"encoding/json"
 
+	"time"
 	"fmt"
 	"strconv"
 	"net/http"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-contrib/sessions"
+	"github.com/dgrijalva/jwt-go"
 )
 
 var  w 	*worker.Worker = worker.InitWorker()
@@ -28,12 +28,14 @@ func Login(c *gin.Context){
 		)
 		return
 	}
-	var respJson models.CallBack
+	
 	resp, err := w.Post( config.MongoDBApi+"/v1/search", false, gin.H{
 		"DataBaseName":"Spider",
 		"CollectionName":"LoginUser",
 		"Filter" : gin.H{
-			"Account": payload["Account"],
+			"Account": gin.H{
+				"$eq": payload["Account"],
+			},
 		},
 	})
 	if err != nil {
@@ -47,8 +49,9 @@ func Login(c *gin.Context){
 		)
 		return
 	}
+
+	var respJson map[string]interface{}
 	if err := json.Unmarshal( resp.Body, &respJson); err != nil {
-		fmt.Fprintln(gin.DefaultWriter, err.Error())
 		c.AbortWithStatusJSON( http.StatusNotFound, gin.H{
 			"Msg": "Error",
 			"StatusCode" : "404",
@@ -56,27 +59,56 @@ func Login(c *gin.Context){
 		return
 	}
 
-	
-	if len(respJson.Data) == 0 {
-		fmt.Fprintln(gin.DefaultWriter, "login error")
-		c.JSON( http.StatusNotFound, gin.H{
-			"Msg" : "Login error #1",
+	if respJson["StatusCode"].(string) != "200"{
+		c.AbortWithStatusJSON( http.StatusNotFound, gin.H{
+			"Msg": "Error #0 - " + respJson["Msg"].(string),
 			"StatusCode" : "404",
 		})
-		return
-	} else if respJson.Data[0]["Password"].(string) == payload["Password"] {
-		session := sessions.Default(c)
-		session.Set("right", "1")
-		session.Save()
-		c.JSON( http.StatusOK, gin.H{
-			"Msg" : "ok",
-			"StatusCode" : "200",
+		return		
+	}
+
+	if respJson["Data"] == nil {
+		c.AbortWithStatusJSON( http.StatusNotFound, gin.H{
+			"Msg": "Error #2",
+			"StatusCode" : "404",
+		})
+		return		
+	}
+	if respJson["Data"].([]interface{})[0].(map[string]interface{})["Password"].(string) == payload["Password"] {
+
+		now := time.Now()
+		jwtId := payload["Account"] + strconv.FormatInt(now.Unix(), 10)
+		role := "1"
+		claims := Claims{
+			Account:        payload["Account"],
+			Role:           role,
+			StandardClaims: jwt.StandardClaims{
+				Audience:  payload["Account"],
+				ExpiresAt: now.Add(24 * time.Hour).Unix(),
+				Id:        jwtId,
+				IssuedAt:  now.Unix(),
+				Issuer:    "ginJWT",
+				NotBefore: now.Add(10 * time.Second).Unix(),
+				Subject:   payload["Account"],
+			},
+		}
+		tokenClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		token, err := tokenClaims.SignedString(jwtSecret)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"Msg" : token,
+			"StatusCode" : "200",			
 		})
 		return
 	} else {
 		fmt.Fprintln(gin.DefaultWriter, "login error")
 		c.JSON( http.StatusNotFound, gin.H{
-			"Msg" : "Login error #2",
+			"Msg" : "Login error #3",
 			"StatusCode" : "404",
 		})	
 		return		
@@ -123,7 +155,7 @@ func Data(c *gin.Context) {
 			"DataBaseName" : "Spider",
 			"CollectionName" : "Post",
 			"Filter" : gin.H{
-				"create_time" : gin.H{
+				"CreateTime" : gin.H{
 					"$gte" 	: fromDate,
 					"$lte"	: toDate,
 				},
@@ -275,13 +307,25 @@ func Data(c *gin.Context) {
 
 
 		kvSet := make([]map[string][]string,0)
-		for _,v := range respJson["Data"].([]map[string]string){
-			kvSet = append(kvSet, map[string][]string{
-				v["Keyword"] : []string{
-					v["Value"],
-					v["Weight"],
-				},
-			})
+		for _,v := range respJson["Data"].([]interface{}){
+			if v.(map[string]interface{})["Weight"] == nil {
+				kvSet = append(kvSet, map[string][]string{
+					v.(map[string]interface{})["Keyword"].(string) : []string{
+						v.(map[string]interface{})["ReplyStatment"].(string),	
+					},
+				})
+			} else {
+				kvSet = append(kvSet, map[string][]string{
+					v.(map[string]interface{})["Keyword"].(string) : []string{
+						v.(map[string]interface{})["ReplyStatment"].(string),
+						v.(map[string]interface{})["Weight"].(string),	
+					},
+				})				
+			}
+
+
+
+			
 		}
 		passBack := gin.H{
 			"Msg" : "ok",
@@ -299,7 +343,7 @@ func Data(c *gin.Context) {
 				"status" : gin.H{
 					"$eq": "alive",
 				},
-				"domain" : gin.H{
+				"Domain" : gin.H{
 					"$eq": payload["Domain"], 
 				},
 			},
@@ -425,13 +469,13 @@ func Set(c *gin.Context) {
 						"status" 	: gin.H{
 							"$eq"	: "alive",
 						},
-						"account" 	: gin.H{
+						"Account" 	: gin.H{
 							"$eq"	: v["Account"],
 						},
-						"password"	: gin.H{
+						"Password"	: gin.H{
 							"$eq"	: v["Password"],
 						},
-						"domain" 	: gin.H{
+						"Domain" 	: gin.H{
 							"$eq"	: v["Domain"], 
 						},
 					},				
@@ -476,9 +520,9 @@ func Set(c *gin.Context) {
 					"DataBaseName" : "Spider",
 					"CollectionName" : "User",
 					"Record" : map[string]string{
-						"account" 	: v["Account"],
-						"password"	: v["Password"],
-						"domain" 	: v["Domain"], 
+						"Account" 	: v["Account"],
+						"Password"	: v["Password"],
+						"Domain" 	: v["Domain"], 
 						"status"	: "alive",
 					},
 				})
@@ -514,10 +558,10 @@ func Set(c *gin.Context) {
 					"DataBaseName" : "Spider",
 					"CollectionName" : "User",
 					"Filter" : gin.H{
-						"account" 	: gin.H{
+						"Account" 	: gin.H{
 							"$eq"	: v["Account"],
 						},
-						"domain" 	: gin.H{
+						"Domain" 	: gin.H{
 							"$eq"	: v["Domain"], 
 						},
 					},
@@ -585,10 +629,10 @@ func Set(c *gin.Context) {
 					"DataBaseName" : "Spider",
 					"CollectionName" : "Reply",
 					"Filter" : gin.H{
-						"keyword" 			: gin.H{
+						"Keyword" 			: gin.H{
 							"$eq"			: v["Key"],
 						},
-						"reply_statment"	: gin.H{
+						"ReplyStatment"	: gin.H{
 							"$eq"			: v["Value"],
 						},
 					},				
@@ -634,9 +678,9 @@ func Set(c *gin.Context) {
 					"DataBaseName" : "Spider",
 					"CollectionName" : "Reply",
 					"Record" : map[string]string{
-						"keyword" 			: v["Key"],
-						"reply_statment"	: v["Value"],
-						"weights" 			: v["Weight"],
+						"Keyword" 			: v["Key"],
+						"ReplyStatment"		: v["Value"],
+						"Weights" 			: v["Weight"],
 						"status"			: "alive",
 					},
 				})
@@ -671,9 +715,13 @@ func Set(c *gin.Context) {
 				resp, err := w.Post( config.MongoDBApi + "/v1/delete", false, gin.H{
 					"DataBaseName" : "Spider",
 					"CollectionName" : "Reply",
-					"Filter" : map[string]string{
-						"keyword" 			: v["Key"],
-						"reply_statment"	: v["Value"],
+					"Filter" : gin.H{
+						"Keyword" 			: gin.H{
+							"$eq"	: v["Key"],
+						},
+						"ReplyStatment"		: gin.H{
+							"$eq" 	: v["Value"],
+						},
 					},
 				})
 
@@ -736,7 +784,7 @@ func Set(c *gin.Context) {
 					"DataBaseName" : "Spider",
 					"CollectionName" : "Config",
 					"Filter" : gin.H{
-						"domain" 			: gin.H{
+						"Domain" 			: gin.H{
 							"$eq" 			: v["Domain"],
 						},
 						"status" 			: gin.H{
@@ -777,9 +825,9 @@ func Set(c *gin.Context) {
 					"DataBaseName" : "Spider",
 					"CollectionName" : "Config",
 					"Record" : map[string]string{
-						"domain" 				: v["Domain"],
-						"daily_scraping_on" 	: v["DailyScrapingOn"],			
-						"save_for_x_days" 		: v["SaveForXDays"],
+						"Domain" 				: v["Domain"],
+						"DailyScrapingOn" 		: v["DailyScrapingOn"],			
+						"SaveForXDays" 			: v["SaveForXDays"],
 						"status" 				: "alive",
 					},
 				})
@@ -843,13 +891,13 @@ func Set(c *gin.Context) {
 					"DataBaseName" : "Spider",
 					"CollectionName" : "UserGroup",
 					"Filter" : gin.H{
-						"domain" 	: gin.H{
+						"Domain" 	: gin.H{
 							"$eq"	: v["Domain"],
 						},
-						"account"	: gin.H{
+						"Account"	: gin.H{
 							"$eq"	: v["CurrentAccount"],    
 						},
-						"url" 		: gin.H{
+						"Url" 		: gin.H{
 							"$eq" 	: v["AddUrl"],  	
 						},
 						"status" 	: gin.H{
@@ -900,9 +948,9 @@ func Set(c *gin.Context) {
 					"DataBaseName" : "Spider",
 					"CollectionName" : "UserGroup",
 					"Record" : map[string]string{
-						"domain" 				: v["Domain"],
-						"account"				: v["CurrentAccount"],    
-						"url" 					: v["AddUrl"],  	
+						"Domain" 				: v["Domain"],
+						"Account"				: v["CurrentAccount"],    
+						"Url" 					: v["AddUrl"],  	
 						"status" 				: "alive",
 					},
 				})
@@ -936,13 +984,13 @@ func Set(c *gin.Context) {
 					"DataBaseName" : "Spider",
 					"CollectionName" : "UserGroup",
 					"Filter" : gin.H{
-						"domain" 	: gin.H{
+						"Domain" 	: gin.H{
 							"$eq" 	: v["Domain"],
 						},
-						"account"	: gin.H{
+						"Account"	: gin.H{
 							"$eq" 	: v["CurrentAccount"],    
 						},
-						"url" 		: gin.H{
+						"Url" 		: gin.H{
 							"$eq" 	: v["AddUrl"], 
 						},
 					},

@@ -1,7 +1,6 @@
 package web
 
 import (
-	"Decorations/WebApp/Config"
 
 
 	"os"
@@ -11,9 +10,8 @@ import (
 	"encoding/base64"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	//"github.com/gin-contrib/cors"
+	"github.com/dgrijalva/jwt-go"
+
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -37,9 +35,8 @@ func init() {
 
 	R = gin.Default()
 
-	store := cookie.NewStore([]byte(config.CookieSecret))
 
-	R.Use(sessions.Sessions("status", store))
+
 	R.Use(SetHeader())
 
 	R.GET("/", Alive)
@@ -48,11 +45,12 @@ func init() {
 	{
 		v001 := api.Group("/v001")
 		{
-			v001.GET(  "/token"		, Token )
-			v001.POST( "/login"		, Login )
-			v001.POST( "/setting"	, AuthRequired()	, Set)
-			v001.POST( "/data"		, AuthRequired()	, Data)
-			v001.POST( "/alive"		, AuthRequired()	, AliveCheck)
+			v001.GET(  "/token"				, Token )
+			v001.POST( "/login"				, Login )
+			v001.POST( "/setting"			, AuthRequired()	, Set)
+			v001.POST( "/data"				, AuthRequired()	, Data)
+			v001.POST( "/alive"				, AuthRequired()	, AliveCheck)
+			//v001.GET(  "/ticker/:domain"	, AuthRequired()	, Ticker)
 		}
 	}
 
@@ -98,3 +96,9 @@ func AliveCheck(c *gin.Context){
 		"StatusCode":"200",
 	})
 } 
+
+type Claims struct {
+	Account 	string 			`json:"Account"`
+	Role 		string 			`json:"Role"`
+	jwt.StandardClaims
+}
