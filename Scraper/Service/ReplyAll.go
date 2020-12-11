@@ -58,7 +58,7 @@ func FacebookReplyAll(c *gin.Context) {
 		)
 		return
 	}
-	var respJson map[string]interface{}
+	var respJson ScraperModels.Resp
 	if err := json.Unmarshal( resp.Body, &respJson); err != nil {
 		fmt.Fprintln(gin.DefaultWriter, err.Error())
 		c.AbortWithStatusJSON( http.StatusNotFound, gin.H{
@@ -68,15 +68,15 @@ func FacebookReplyAll(c *gin.Context) {
 		return
 	}
 
-	if respJson["Msg"].(string) != "200" {
+	if respJson.Msg != "200" {
 		c.AbortWithStatusJSON( http.StatusNotFound, gin.H{
-			"Msg" : respJson["Msg"].(string),
-			"StatusCode":"404",
+			"Msg" : respJson.Msg,
+			"StatusCode": respJson.StatusCode,
 		})
 		return
 	}
 
-	if respJson["Data"] == nil {
+	if len(respJson.Data) == 0 {
 		c.AbortWithStatusJSON( http.StatusNotFound, gin.H{
 			"Msg" : "No data",
 			"StatusCode":"404",
@@ -86,8 +86,8 @@ func FacebookReplyAll(c *gin.Context) {
 
 	questionQue := map[string][]string{}
 	ErrorIds := map[int]string
-	for i,v := range respJson["Data"].([]interface{}) {
-		respReply, err := w.Post( config.ReplyApi+"/v1/do", false, gin.H{
+	for i,v := range respJson.Data {
+		respReply, err := w.Post( config.ReplyApi + "/v1/do", false, gin.H{
 			"Data" : v.(map[string]interface{})["context"].(string), 							// back with keyword
 		})
 		if err != nil {

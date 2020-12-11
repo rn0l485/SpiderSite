@@ -37,3 +37,9 @@ type Setting struct {
 	PreviousValue 		interface{} 			`bson:"previous_value" 	json:"PreviousValue"`
 	Comments 			string 					`bson:"comments" 		json:"Comments"`
 }
+
+type Resp struct {
+	Msg 				string 					`json:"Msg"`
+	StatusCode 			string 					`json:"StatusCode"`
+	Data				[]interface{}			`json:"Data"`
+}
