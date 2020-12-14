@@ -20,8 +20,9 @@ func init() {
 	R.GET("/", alive)
 	facebook := R.Group("/facebook")
 	{
-		facebook.POST("/crawler", FacebookPersonalCrawler)
-		facebook.GET("/replyer", FacebookReplyAll)
+		facebook.POST("/init"		, FacebookInit)
+		facebook.POST("/crawler"	, FacebookPersonalCrawler)
+		facebook.GET("/replyer"		, FacebookReplyAll)
 	}
 
 	R.NoRoute(pageNotFound)
