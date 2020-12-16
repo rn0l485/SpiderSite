@@ -21,7 +21,7 @@ import (
 	"Decorations/Scraper/Config"
 )
 
-var ActionChan map[string](chan []string) = make(map[string](chan []string))
+var FacebookActionChan map[string](chan []string) = make(map[string](chan []string))
 
 func FacebookInit(c *gin.Context) {
 	var payload map[string]string
@@ -36,7 +36,7 @@ func FacebookInit(c *gin.Context) {
 		return
 	}
 
-	if _, ok := ActionChan[payload["Account"]]; ok {
+	if _, ok := FacebookActionChan[payload["Account"]]; ok {
 		c.AbortWithStatusJSON(
 			http.StatusNotFound,
 			gin.H{
@@ -47,10 +47,10 @@ func FacebookInit(c *gin.Context) {
 		return
 	}
 
-	ActionChan[payload["Domain"]+payload["Account"]] = make(chan []string)
+	FacebookActionChan[payload["Domain"]+payload["Account"]] = make(chan []string)
 
 
-	go InitFacebookAccount(ActionChan[payload["Domain"]+payload["Account"]], payload["Account"], payload["Password"])
+	go InitFacebookAccount(FacebookActionChan[payload["Domain"]+payload["Account"]], payload["Account"], payload["Password"])
 	
 
 	c.JSON(http.StatusOK, gin.H{
@@ -80,7 +80,7 @@ func InitFacebookAccount( groupURL chan []string, account, password string) {
 	err := chromedp.Run( ctx, FacebookLogin(account, password))
 	if err != nil {
 		fmt.Fprintln(gin.DefaultWriter, err.Error())
-		delete(ActionChan, "facebook"+account )
+		delete(FacebookActionChan, "facebook"+account )
 		return
 	}
 
@@ -112,7 +112,7 @@ func InitFacebookAccount( groupURL chan []string, account, password string) {
 			} 
 		}
 	}
-	delete(ActionChan, "facebook"+account )
+	delete(FacebookActionChan, "facebook"+account )
 	return
 }
 

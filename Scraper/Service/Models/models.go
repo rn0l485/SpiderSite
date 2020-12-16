@@ -43,3 +43,9 @@ type Resp struct {
 	StatusCode 			string 					`json:"StatusCode"`
 	Data				[]interface{}			`json:"Data"`
 }
+
+type Payload struct {
+	Account 			string 					`json:"Account"`
+	Method 				string 					`json:"Method"`
+	Data 				[]string 				`json:"Data"`
+}
