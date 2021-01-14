@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	sp 		"Decorations/Models/Scraper"
+	sp 		"Decorations/Scraper/Service"
 	"Decorations/Scraper/Config"
 
 	"golang.org/x/sync/errgroup"
@@ -19,6 +19,8 @@ var (
 )
 
 func main() {
+	defer sp.Cancel()
+
 	srv1 := &http.Server{
 		Addr:		config.Port,
 		Handler:	sp.R,
@@ -39,4 +41,5 @@ func main() {
 		log.Fatal(err)
 	}
 	
+
 }

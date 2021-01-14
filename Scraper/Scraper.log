@@ -1,0 +1,35 @@
+[GIN] 2020/12/29 - 13:36:08 | 404 |      67.573µs |      172.17.0.6 | GET      "/facebook/replyer"
+[GIN] 2020/12/29 - 14:06:08 | 200 |     101.284µs |      172.17.0.6 | POST     "/facebook/init"
+facebookymbm101@gmail.com
+[GIN] 2020/12/29 - 14:06:18 | 200 |     161.868µs |      172.17.0.6 | POST     "/facebook/crawler"
+[GIN] 2020/12/29 - 14:06:18 | 200 |      66.207µs |      172.17.0.6 | POST     "/facebook/init"
+facebook0975012080
+[GIN] 2020/12/29 - 14:06:28 | 200 |     110.836µs |      172.17.0.6 | POST     "/facebook/crawler"
+#2 saving error: multiple write errors: [{write errors: [{E11000 duplicate key error collection: Spider.Post index: Url_1 dup key: { Url: "href="https://www.facebook.com/groups/1624159227857661/permalink/2681013482172225/?" }}]}, {<nil>}]
+facebook over 0975012080 // https://www.facebook.com/groups/1624159227857661
+#1Group error : https://www.facebook.com/groups/663242794198175
+[GIN] 2020/12/29 - 14:36:28 | 404 |   11.218089ms |      172.17.0.6 | GET      "/facebook/replyer"
+[GIN] 2020/12/29 - 15:06:28 | 404 |    1.370429ms |      172.17.0.6 | POST     "/facebook/init"
+[GIN] 2020/12/29 - 15:06:38 | 200 |     4.85639ms |      172.17.0.6 | POST     "/facebook/crawler"
+#1Group error : https://www.facebook.com/groups/663242794198175
+[GIN] 2020/12/29 - 15:07:55 | 200 |      47.962µs | 118.161.190.160 | GET      "/"
+[GIN] 2020/12/29 - 15:08:01 | 404 |      77.226µs | 118.161.190.160 | POST     "/facebook/init"
+[GIN] 2020/12/29 - 15:08:04 | 200 |       66.77µs | 118.161.190.160 | POST     "/facebook/crawler"
+[GIN] 2020/12/29 - 15:13:29 | 200 |      53.459µs | 118.161.190.160 | GET      "/"
+[GIN] 2020/12/29 - 15:13:40 | 404 |      69.961µs | 118.161.190.160 | POST     "/facebook/init"
+[GIN] 2020/12/29 - 15:13:47 | 200 |          7m8s |      172.17.0.6 | POST     "/facebook/init"
+facebook0975012080
+[GIN] 2020/12/29 - 15:13:50 | 200 |  2.545137486s | 118.161.190.160 | POST     "/facebook/crawler"
+#3 #1Bcontext deadline exceeded
+facebook over 0975012080
+[GIN] 2020/12/29 - 15:43:47 | 404 |      46.671µs |      172.17.0.6 | GET      "/facebook/replyer"
+[GIN] 2020/12/29 - 16:13:47 | 404 |      82.253µs |      172.17.0.6 | POST     "/facebook/init"
+[GIN] 2020/12/29 - 16:13:57 | 200 |       90.64µs |      172.17.0.6 | POST     "/facebook/crawler"
+[GIN] 2020/12/30 - 04:01:58 | 200 |      73.273µs | 118.161.190.160 | GET      "/"
+[GIN] 2020/12/30 - 04:03:35 | 404 |      89.326µs | 118.161.190.160 | POST     "/facebook/init"
+[GIN] 2020/12/30 - 04:05:32 | 200 |     318.697µs | 118.161.190.160 | POST     "/facebook/crawler"
+#1Group error : https://www.facebook.com/groups/663242794198175
+[GIN] 2020/12/30 - 04:05:38 | 404 |      68.884µs | 118.161.190.160 | POST     "/facebook/init"
+[GIN] 2020/12/30 - 04:06:52 | 404 |    1.079052ms | 118.161.190.160 | POST     "/facebook/init"
+[GIN] 2020/12/30 - 04:07:11 | 404 | 10.000246516s | 118.161.190.160 | POST     "/facebook/crawler"
+[GIN] 2020/12/30 - 04:07:35 | 404 |      81.035µs | 118.161.190.160 | POST     "/facebook/init"

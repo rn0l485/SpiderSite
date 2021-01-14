@@ -1,6 +1,7 @@
 package Replyer
 
 import (
+	//"fmt"
 	"regexp"
 	"encoding/json"
 	"net/http"
@@ -57,7 +58,7 @@ func processing( c *gin.Context ) {
 	}
 
 
-	targetKeyPair := map[string]string{
+	targetKeyPair := gin.H{
 		"Weights" : "0",
 	}
 
@@ -68,7 +69,7 @@ func processing( c *gin.Context ) {
 			continue
 		}
 		if matched {
-			if v.(map[string]interface{})["Weights"].(string) > targetKeyPair["Weights"] {
+			if v.(map[string]interface{})["Weights"].(string) > targetKeyPair["Weights"].(string) {
 				targetKeyPair["Weights"] = v.(map[string]interface{})["Weights"].(string)
 				targetKeyPair["Keyword"] = v.(map[string]interface{})["Keyword"].(string)
 				targetKeyPair["ReplyStatment"] = v.(map[string]interface{})["ReplyStatment"].(string)
@@ -76,14 +77,16 @@ func processing( c *gin.Context ) {
 		}
 	}
 
-	if _,ok := targetKeyPair["Keyword"] ; !ok {
+	if targetKeyPair["Weights"].(string) == "0" {
 		c.JSON( http.StatusInternalServerError, gin.H{
 			"Msg": "no keyword",
 			"StatusCode" : "500",
 		})
+		return
 	}
 	targetKeyPair["Msg"] = "ok"
 	targetKeyPair["StatusCode"] = "200"
 
+	//fmt.Print(targetKeyPair)
 	c.JSON(http.StatusOK, targetKeyPair)
 }
